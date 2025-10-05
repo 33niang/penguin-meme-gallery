@@ -15,6 +15,8 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     display: flex;
+    flex-direction: column; /* 让页脚可以自然地排在 main 后面 */
+    min-height: 100vh; /* 保证内容不足时页脚也在底部 */
 }
 
 /* 顶部导航栏 */
@@ -106,13 +108,11 @@ body {
     margin-left: var(--sidebar-width);
     padding: 24px;
     transition: margin-left 0.3s ease;
-    padding-bottom: 80px; /* 为页脚留出空间 */
 }
 
 /* 表情包网格 */
 .gallery-container {
     display: grid;
-    /* 再次放大图片 */
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 24px;
 }
@@ -133,18 +133,17 @@ body {
     overflow: hidden; /* 隐藏溢出的覆盖层 */
 }
 
-/* 这是修改后的地方 */
 .gallery-item .meme-image {
     display: block;
     width: 100%;
-    height: 220px; /* 增加图片区域高度 */
+    height: 220px;
     object-fit: contain;
     background-color: #f8f9fa;
-    transition: transform 0.3s ease; /* 为图片增加平滑放大效果 */
+    transition: transform 0.3s ease;
 }
 
 .gallery-item:hover .meme-image {
-    transform: scale(1.05); /* 鼠标悬停时轻微放大图片 */
+    transform: scale(1.05);
 }
 
 /* 文件名显示 */
@@ -163,20 +162,20 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px; /* 增加条的高度 */
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent); /* 半透明黑色渐变 */
+    height: 60px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* 将内容推到右侧 */
+    justify-content: flex-end;
     padding: 0 15px;
-    opacity: 0; /* 默认完全透明 */
-    transform: translateY(20px); /* 默认向下偏移 */
+    opacity: 0;
+    transform: translateY(20px);
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .image-container:hover .image-overlay {
-    opacity: 1; /* 悬停时完全可见 */
-    transform: translateY(0); /* 悬停时移回原位 */
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .download-link {
@@ -197,33 +196,67 @@ body {
     height: 22px;
 }
 
-
-/* --- 侧边栏和页脚的折叠逻辑 --- */
-
-body.sidebar-collapsed .sidebar {
-    transform: translateX(-100%);
-}
-
-body.sidebar-collapsed .main-content,
-body.sidebar-collapsed .site-footer {
-    margin-left: 0;
-    left: 0;
-}
-
+/* --- 页脚样式修改 --- */
 .site-footer {
-    position: fixed;
-    bottom: 0;
-    left: var(--sidebar-width);
-    right: 0;
+    width: 100%;
+    box-sizing: border-box; /* 保证 padding 不会影响宽度 */
     padding: 15px;
     background-color: #e9ecef;
     text-align: center;
     font-size: 14px;
     color: #6c757d;
     border-top: 1px solid var(--border-color);
-    z-index: 800;
-    transition: left 0.3s ease;
+    /* 移除 position:fixed 和相关属性 */
 }
+
+
+/* --- 侧边栏折叠逻辑 --- */
+body.sidebar-collapsed .sidebar {
+    transform: translateX(-100%);
+}
+
+body.sidebar-collapsed .main-content {
+    margin-left: 0;
+}
+
+
+/* --- 新增：自定义右键菜单样式 --- */
+.custom-context-menu {
+    position: absolute;
+    z-index: 2000;
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px; /* 圆角样式 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    padding: 8px;
+    width: 220px;
+    font-size: 14px;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.context-menu-item:hover {
+    background-color: #f0f0f0;
+}
+
+.context-menu-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 12px;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 8px 0;
+}
+
 
 /* 移动端响应式设计 */
 @media (max-width: 768px) {
@@ -235,9 +268,8 @@ body.sidebar-collapsed .site-footer {
         transform: translateX(0);
     }
     
-    .main-content, .site-footer {
+    .main-content {
         margin-left: 0;
-        left: 0;
     }
 
     .gallery-container {
@@ -249,7 +281,6 @@ body.sidebar-collapsed .site-footer {
         height: 130px;
     }
 
-    /* 在移动端始终显示下载条（半透明） */
     .image-overlay {
         opacity: 0.7;
         transform: translateY(0);

@@ -47,26 +47,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const galleryContainer = document.getElementById('gallery-container');
     const currentCategoryTitle = document.getElementById('current-category-title');
     const menuToggle = document.getElementById('menu-toggle');
+    const contextMenu = document.getElementById('custom-context-menu');
 
-    // 动态生成侧边栏分类，并自动计算数量
     function populateSidebar() {
         memeCategories.forEach((category, index) => {
-            const imageCount = category.images.length; // 自动计算图片数量
+            const imageCount = category.images.length;
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.href = '#';
-            // 将数量显示在名字旁边
             a.textContent = `${category.name} (${imageCount})`;
             a.dataset.categoryIndex = index;
-
             if (index === 0) a.classList.add('active');
-            
             li.appendChild(a);
             categoryList.appendChild(li);
         });
     }
 
-    // 根据分类显示表情包
     function showCategory(categoryIndex) {
         const category = memeCategories[categoryIndex];
         if (!category) return;
@@ -76,23 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         category.images.forEach(filename => {
             const imagePath = `${category.path}/${filename}`;
-            
-            // 创建总卡片
             const item = document.createElement('div');
             item.className = 'gallery-item';
 
-            // --- 创建新的图片容器 ---
             const imageContainer = document.createElement('div');
             imageContainer.className = 'image-container';
 
-            // 创建图片
             const img = document.createElement('img');
-            img.className = 'meme-image'; // <--- 这是新增的一行
+            img.className = 'meme-image';
             img.src = imagePath;
             img.alt = filename;
             img.loading = 'lazy';
 
-            // --- 创建悬浮下载条 ---
             const overlay = document.createElement('div');
             overlay.className = 'image-overlay';
 
@@ -100,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             downloadLink.href = imagePath;
             downloadLink.setAttribute('download', filename);
             downloadLink.className = 'download-link';
-            downloadLink.title = `下载 ${filename}`; // 增加提示
+            downloadLink.title = `下载 ${filename}`;
             
             const downloadIcon = document.createElement('img');
             downloadIcon.src = 'assets/download-icon.png';
@@ -109,21 +100,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             downloadLink.appendChild(downloadIcon);
             overlay.appendChild(downloadLink);
-
-            // --- 创建文件名 ---
-            const filenameDiv = document.createElement('div');
-            filenameDiv.className = 'filename';
-            filenameDiv.textContent = filename;
             
-            // --- 组装 ---
             imageContainer.appendChild(img);
             imageContainer.appendChild(overlay);
             item.appendChild(imageContainer);
+            
+            const filenameDiv = document.createElement('div');
+            filenameDiv.className = 'filename';
+            filenameDiv.textContent = filename;
             item.appendChild(filenameDiv);
+            
             galleryContainer.appendChild(item);
+
+            // 为每个图片容器添加右键菜单事件
+            imageContainer.addEventListener('contextmenu', (e) => {
+                // 这里的 e.preventDefault() 是必需的，以防止在图片上依然出现默认菜单
+                e.preventDefault();
+                showContextMenu(e, imagePath, filename);
+            });
         });
 
-        // 更新侧边栏状态
         document.querySelectorAll('.category-list a').forEach(a => {
             a.classList.remove('active');
             if (a.dataset.categoryIndex == categoryIndex) {
@@ -131,13 +127,55 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 移动端自动关闭侧边栏
         if (window.innerWidth <= 768) {
             document.body.classList.remove('sidebar-opened');
         }
     }
     
+    // 显示和定位右键菜单
+    function showContextMenu(event, imagePath, filename) {
+        contextMenu.style.display = 'block';
+        
+        const { clientX: mouseX, clientY: mouseY } = event;
+        const { normalizedX, normalizedY } = normalizePosition(mouseX, mouseY);
+
+        contextMenu.style.left = `${normalizedX}px`;
+        contextMenu.style.top = `${normalizedY}px`;
+
+        contextMenu.dataset.imagePath = imagePath;
+        contextMenu.dataset.filename = filename;
+    }
+
+    // 隐藏右键菜单
+    function hideContextMenu() {
+        if (contextMenu.style.display === 'block') {
+            contextMenu.style.display = 'none';
+        }
+    }
+
+    // 防止菜单超出屏幕
+    function normalizePosition(mouseX, mouseY) {
+        const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
+        const { offsetWidth: menuWidth, offsetHeight: menuHeight } = contextMenu;
+
+        let normalizedX = mouseX;
+        let normalizedY = mouseY;
+
+        if (mouseX + menuWidth > windowWidth) {
+            normalizedX = windowWidth - menuWidth - 5;
+        }
+        if (mouseY + menuHeight > windowHeight) {
+            normalizedY = windowHeight - menuHeight - 5;
+        }
+        return { normalizedX, normalizedY };
+    }
+
+
     // --- 事件监听 ---
+
+    // --- 新增：全局禁用默认右键菜单 ---
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
     categoryList.addEventListener('click', (e) => {
         e.preventDefault();
         if (e.target.tagName === 'A') {
@@ -153,6 +191,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // 全局点击事件，用于隐藏菜单
+    window.addEventListener('click', hideContextMenu);
+
+
+    // 为菜单项绑定具体功能
+    function setupContextMenuActions() {
+        document.getElementById('menu-open-in-tab').addEventListener('click', () => {
+            const imagePath = contextMenu.dataset.imagePath;
+            if (imagePath) window.open(imagePath, '_blank');
+        });
+
+        document.getElementById('menu-copy-link').addEventListener('click', async (e) => {
+            const imagePath = contextMenu.dataset.imagePath;
+            if (!imagePath) return;
+            try {
+                const fullUrl = new URL(imagePath, window.location.href).href;
+                await navigator.clipboard.writeText(fullUrl);
+                const originalText = e.currentTarget.querySelector('span').textContent;
+                e.currentTarget.querySelector('span').textContent = '已复制!';
+                setTimeout(() => {
+                    e.currentTarget.querySelector('span').textContent = originalText;
+                }, 1500);
+            } catch (err) {
+                console.error('复制链接失败: ', err);
+                alert('复制链接失败');
+            }
+        });
+
+        document.getElementById('menu-copy-image').addEventListener('click', async (e) => {
+            const imagePath = contextMenu.dataset.imagePath;
+            if (!imagePath) return;
+            const originalText = e.currentTarget.querySelector('span').textContent;
+            try {
+                const response = await fetch(imagePath);
+                const blob = await response.blob();
+                await navigator.clipboard.write([
+                    new ClipboardItem({ [blob.type]: blob })
+                ]);
+                e.currentTarget.querySelector('span').textContent = '已复制!';
+            } catch (err) {
+                console.error('复制图片失败: ', err);
+                e.currentTarget.querySelector('span').textContent = '复制失败';
+            } finally {
+                setTimeout(() => {
+                    e.currentTarget.querySelector('span').textContent = originalText;
+                }, 1500);
+            }
+        });
+        
+        document.getElementById('menu-download').addEventListener('click', () => {
+            const imagePath = contextMenu.dataset.imagePath;
+            const filename = contextMenu.dataset.filename;
+            if (!imagePath || !filename) return;
+
+            const link = document.createElement('a');
+            link.href = imagePath;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+
     // --- 初始化页面 ---
     function init() {
         if (window.innerWidth <= 768) {
@@ -160,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         populateSidebar();
         showCategory(0);
+        setupContextMenuActions();
     }
 
     init();
