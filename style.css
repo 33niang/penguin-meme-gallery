@@ -133,7 +133,8 @@ body {
     overflow: hidden; /* 隐藏溢出的覆盖层 */
 }
 
-.gallery-item img {
+/* 这是修改后的地方 */
+.gallery-item .meme-image {
     display: block;
     width: 100%;
     height: 220px; /* 增加图片区域高度 */
@@ -142,7 +143,7 @@ body {
     transition: transform 0.3s ease; /* 为图片增加平滑放大效果 */
 }
 
-.gallery-item:hover img {
+.gallery-item:hover .meme-image {
     transform: scale(1.05); /* 鼠标悬停时轻微放大图片 */
 }
 
@@ -244,7 +245,7 @@ body.sidebar-collapsed .site-footer {
         gap: 15px;
     }
 
-    .gallery-item img {
+    .gallery-item .meme-image {
         height: 130px;
     }
 
