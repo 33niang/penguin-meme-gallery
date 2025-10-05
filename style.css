@@ -106,7 +106,7 @@ body {
     margin-left: var(--sidebar-width);
     padding: 24px;
     transition: margin-left 0.3s ease;
-    padding-bottom: 80px;
+    padding-bottom: 80px; /* 为页脚留出空间 */
 }
 
 /* 表情包网格 */
