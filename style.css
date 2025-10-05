@@ -130,7 +130,7 @@ body {
 /* 图片容器，这是实现悬停效果的关键 */
 .image-container {
     position: relative;
-    overflow: hidden;
+    overflow: hidden; /* 隐藏溢出的覆盖层 */
 }
 
 .gallery-item img {
@@ -139,6 +139,11 @@ body {
     height: 220px; /* 增加图片区域高度 */
     object-fit: contain;
     background-color: #f8f9fa;
+    transition: transform 0.3s ease; /* 为图片增加平滑放大效果 */
+}
+
+.gallery-item:hover img {
+    transform: scale(1.05); /* 鼠标悬停时轻微放大图片 */
 }
 
 /* 文件名显示 */
@@ -151,20 +156,20 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
-/* 悬浮下载条 */
+/* 悬浮下载条 (渐变效果) */
 .image-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 50px;
-    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    height: 60px; /* 增加条的高度 */
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent); /* 半透明黑色渐变 */
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-end; /* 将内容推到右侧 */
     padding: 0 15px;
     opacity: 0; /* 默认完全透明 */
-    transform: translateY(100%); /* 默认移出视野 */
+    transform: translateY(20px); /* 默认向下偏移 */
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
@@ -178,12 +183,19 @@ body {
     align-items: center;
     justify-content: center;
     padding: 5px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.download-link:hover {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .download-icon {
     width: 22px;
     height: 22px;
-    filter: brightness(0) invert(1); /* 将图标变为白色 */
+    /* 关键修复：这个滤镜可以将任何颜色的图标强制变为白色，解决白色方块问题 */
+    filter: brightness(0) invert(1); 
 }
 
 
@@ -242,5 +254,10 @@ body.sidebar-collapsed .site-footer {
     .image-overlay {
         opacity: 0.7;
         transform: translateY(0);
+        height: 40px;
+    }
+    .download-icon {
+        width: 18px;
+        height: 18px;
     }
 }
