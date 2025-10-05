@@ -113,9 +113,10 @@ document.addEventListener('DOMContentLoaded', () => {
             galleryContainer.appendChild(item);
 
             // 为每个图片容器添加右键菜单事件
+            // 不再拦截图片区域的右键，允许浏览器原生菜单（复制图像/链接更稳定）
             imageContainer.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                showContextMenu(e, imagePath, filename);
+                hideContextMenu(); // 关闭可能存在的自定义菜单
+                // 保留浏览器原生右键菜单
             });
         });
 
@@ -179,12 +180,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 事件监听 ---
 
-    // 全局禁用默认右键菜单 (除了我们自己的)
+    // 允许图片区域使用浏览器原生右键菜单；非图片区域也不强制拦截
     document.addEventListener('contextmenu', e => {
-        // 检查右键点击的目标是否在我们的自定义菜单内部，如果是，则不阻止
-        if (!contextMenu.contains(e.target)) {
-            e.preventDefault();
-        }
+        if (contextMenu.contains(e.target)) return;
+        hideContextMenu();
+        // 不再阻止默认行为，原生菜单可用
     });
 
 
@@ -207,6 +207,49 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('click', hideContextMenu);
 
 
+    // 剪贴板权限检测（尽量提前申请权限，失败仍继续尝试）
+    async function ensureClipboardPermission() {
+        try {
+            if (!navigator.permissions || !navigator.clipboard) return true; // 无 Permissions API 时直接尝试
+            const res = await navigator.permissions.query({ name: 'clipboard-write' });
+            return res.state !== 'denied';
+        } catch {
+            return true;
+        }
+    }
+
+    // 将图片作为 PNG 写入剪贴板（成功率更高）
+    async function copyImageAsPngToClipboard(src) {
+        return new Promise((resolve, reject) => {
+            try {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = async () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob(async (pngBlob) => {
+                        if (!pngBlob) return reject(new Error('toBlob 失败'));
+                        const canWrite = window.isSecureContext && !!(navigator.clipboard && navigator.clipboard.write) && typeof ClipboardItem !== 'undefined';
+                        if (!canWrite) return reject(new Error('ClipboardItem 不可用或非安全上下文'));
+                        try {
+                            await navigator.clipboard.write([ new ClipboardItem({ 'image/png': pngBlob }) ]);
+                            resolve();
+                        } catch (err) {
+                            reject(err);
+                        }
+                    }, 'image/png');
+                };
+                img.onerror = () => reject(new Error('图片加载失败'));
+                img.src = src;
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+
     // 为菜单项绑定具体功能
     function setupContextMenuActions() {
         document.getElementById('menu-open-in-tab').addEventListener('click', () => {
@@ -217,38 +260,111 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('menu-copy-link').addEventListener('click', async (e) => {
             const imagePath = contextMenu.dataset.imagePath;
             if (!imagePath) return;
-            try {
-                const fullUrl = new URL(imagePath, window.location.href).href;
-                await navigator.clipboard.writeText(fullUrl);
-                const originalText = e.currentTarget.querySelector('span').textContent;
-                e.currentTarget.querySelector('span').textContent = '已复制!';
+
+            const originalText = e.currentTarget.querySelector('span').textContent;
+            const setTempText = (text) => {
+                e.currentTarget.querySelector('span').textContent = text;
                 setTimeout(() => {
                     e.currentTarget.querySelector('span').textContent = originalText;
                 }, 1500);
+            };
+
+            const fullUrl = new URL(imagePath, window.location.href).href;
+
+            // 1) 首选现代 Clipboard API
+            try {
+                const permitted = await ensureClipboardPermission();
+                if (!permitted) throw new Error('clipboard 权限被拒');
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(fullUrl);
+                    setTempText('已复制链接');
+                    return;
+                }
+                throw new Error('writeText 不可用');
             } catch (err) {
-                console.error('复制链接失败: ', err);
-                alert('复制链接失败');
+                console.warn('现代剪贴板复制失败，尝试兼容方案: ', err);
             }
+
+            // 2) 兼容方案：使用 execCommand('copy')
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = fullUrl;
+                ta.style.position = 'fixed';
+                ta.style.top = '-1000px';
+                ta.setAttribute('readonly', '');
+                document.body.appendChild(ta);
+                ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (ok) {
+                    setTempText('已复制链接(兼容)');
+                    return;
+                }
+                throw new Error('execCommand 返回 false');
+            } catch (err2) {
+                console.warn('兼容复制失败，提供手动复制: ', err2);
+            }
+
+            // 3) 最终回退：提示手动复制
+            window.prompt('复制失败，请手动复制以下链接：', fullUrl);
+            setTempText('请手动复制');
         });
 
         document.getElementById('menu-copy-image').addEventListener('click', async (e) => {
             const imagePath = contextMenu.dataset.imagePath;
             if (!imagePath) return;
             const originalText = e.currentTarget.querySelector('span').textContent;
-            try {
-                const response = await fetch(imagePath);
-                const blob = await response.blob();
-                await navigator.clipboard.write([
-                    new ClipboardItem({ [blob.type]: blob })
-                ]);
-                e.currentTarget.querySelector('span').textContent = '已复制!';
-            } catch (err) {
-                console.error('复制图片失败: ', err);
-                e.currentTarget.querySelector('span').textContent = '复制失败';
-            } finally {
+            const setTempText = (text) => {
+                e.currentTarget.querySelector('span').textContent = text;
                 setTimeout(() => {
                     e.currentTarget.querySelector('span').textContent = originalText;
                 }, 1500);
+            };
+
+            try {
+                const permitted = await ensureClipboardPermission();
+                if (!permitted) throw new Error('clipboard 权限被拒');
+
+                // 优先：将图片转为 PNG 后写入剪贴板（跨格式更稳定）
+                await copyImageAsPngToClipboard(imagePath);
+                setTempText('已复制图片');
+                return;
+            } catch (err) {
+                console.warn('复制图片到剪贴板失败，回退为复制链接: ', err);
+                const fullUrl = new URL(imagePath, window.location.href).href;
+
+                // 回退1：现代 API 写入链接
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(fullUrl);
+                        setTempText('已复制链接');
+                        return;
+                    }
+                    throw new Error('writeText 不可用');
+                } catch (err2) {
+                    console.warn('writeText 失败，尝试 execCommand: ', err2);
+                    // 回退2：execCommand 兼容
+                    try {
+                        const ta = document.createElement('textarea');
+                        ta.value = fullUrl;
+                        ta.style.position = 'fixed';
+                        ta.style.top = '-1000px';
+                        ta.setAttribute('readonly', '');
+                        document.body.appendChild(ta);
+                        ta.select();
+                        const ok = document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        if (ok) {
+                            setTempText('已复制链接(兼容)');
+                            return;
+                        }
+                        throw new Error('execCommand 返回 false');
+                    } catch (err3) {
+                        console.warn('execCommand 失败: ', err3);
+                        setTempText('复制失败');
+                        alert('复制失败，请在浏览器站点设置中允许剪贴板权限后重试');
+                    }
+                }
             }
         });
         
