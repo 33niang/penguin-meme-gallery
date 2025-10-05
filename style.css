@@ -222,7 +222,7 @@ body.sidebar-collapsed .main-content {
 
 /* --- 新增：自定义右键菜单样式 --- */
 .custom-context-menu {
-    position: absolute;
+    position: fixed;
     z-index: 2000;
     background-color: #ffffff;
     border: 1px solid var(--border-color);
@@ -231,6 +231,7 @@ body.sidebar-collapsed .main-content {
     padding: 8px;
     width: 220px;
     font-size: 14px;
+    /* 使用 fixed 后，菜单相对于视口，配合 clientX/clientY 定位更稳健 */
 }
 
 .context-menu-item {

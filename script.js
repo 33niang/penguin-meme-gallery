@@ -132,15 +132,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- 以下是修改后的函数 ---
-    // 显示和定位右键菜单
+    // 显示和定位右键菜单（使用 clientX/clientY + position:fixed 更稳健）
     function showContextMenu(event, imagePath, filename) {
         contextMenu.style.display = 'block';
         
-        // 使用 pageX/pageY，它们是相对于整个文档的坐标，已经包含了滚动距离
-        let mouseX = event.pageX;
-        let mouseY = event.pageY;
+        // 使用 clientX/clientY（相对于视口），配合 position: fixed 使用最稳定
+        let mouseX = event.clientX;
+        let mouseY = event.clientY;
         
-        // 先把菜单放在鼠标点击的位置
+        // 先把菜单放在鼠标点击的位置（相对于视口）
         contextMenu.style.left = `${mouseX}px`;
         contextMenu.style.top = `${mouseY}px`;
 
@@ -148,18 +148,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
         const { offsetWidth: menuWidth, offsetHeight: menuHeight } = contextMenu;
 
-        // 判断菜单是否会超出浏览器窗口的右边界
-        // window.scrollX 是水平滚动条的距离
-        if (mouseX + menuWidth > window.scrollX + windowWidth) {
-            // 如果超出，就把菜单的左边贴到鼠标的左边（即菜单显示在鼠标左侧）
-            contextMenu.style.left = `${mouseX - menuWidth}px`;
+        // 如果右侧超出视口，则把菜单显示在鼠标左侧
+        if (mouseX + menuWidth > windowWidth) {
+            let newLeft = mouseX - menuWidth;
+            // 保证不超出左侧
+            if (newLeft < 0) newLeft = 0;
+            contextMenu.style.left = `${newLeft}px`;
         }
 
-        // 判断菜单是否会超出浏览器窗口的下边界
-        // window.scrollY 是垂直滚动条的距离
-        if (mouseY + menuHeight > window.scrollY + windowHeight) {
-            // 如果超出，就把菜单的底部贴到鼠标的底部（即菜单显示在鼠标上方）
-            contextMenu.style.top = `${mouseY - menuHeight}px`;
+        // 如果底部超出视口，则把菜单显示在鼠标上方
+        if (mouseY + menuHeight > windowHeight) {
+            let newTop = mouseY - menuHeight;
+            // 保证不超出顶部
+            if (newTop < 0) newTop = 0;
+            contextMenu.style.top = `${newTop}px`;
         }
 
         // 绑定数据到菜单上，供后续操作使用
