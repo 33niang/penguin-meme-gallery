@@ -194,8 +194,6 @@ body {
 .download-icon {
     width: 22px;
     height: 22px;
-    /* 关键修复：这个滤镜可以将任何颜色的图标强制变为白色，解决白色方块问题 */
-    filter: brightness(0) invert(1); 
 }
 
 
