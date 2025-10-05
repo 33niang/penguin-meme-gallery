@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             downloadLink.title = `下载 ${filename}`; // 增加提示
             
             const downloadIcon = document.createElement('img');
-            downloadIcon.src = 'assets/download-icon.svg'; // 使用你上传的图标
+            downloadIcon.src = 'assets/download-icon.png'; // <-- 这里是修改的地方
             downloadIcon.className = 'download-icon';
             downloadIcon.alt = 'Download';
 
