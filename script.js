@@ -114,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 为每个图片容器添加右键菜单事件
             imageContainer.addEventListener('contextmenu', (e) => {
-                // 这里的 e.preventDefault() 是必需的，以防止在图片上依然出现默认菜单
                 e.preventDefault();
                 showContextMenu(e, imagePath, filename);
             });
@@ -132,22 +131,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // --- 以下是修改后的函数 ---
     // 显示和定位右键菜单
     function showContextMenu(event, imagePath, filename) {
         contextMenu.style.display = 'block';
         
-        const { clientX: mouseX, clientY: mouseY } = event;
-        const { normalizedX, normalizedY } = normalizePosition(mouseX, mouseY);
+        // 使用 pageX/pageY，它们是相对于整个文档的坐标，已经包含了滚动距离
+        let mouseX = event.pageX;
+        let mouseY = event.pageY;
+        
+        // 先把菜单放在鼠标点击的位置
+        contextMenu.style.left = `${mouseX}px`;
+        contextMenu.style.top = `${mouseY}px`;
 
-        // --- 这是修改后的代码 ---
-        // 在设置菜单的 top 和 left 属性时，加上页面的滚动偏移量
-        contextMenu.style.left = `${normalizedX + window.scrollX}px`;
-        contextMenu.style.top = `${normalizedY + window.scrollY}px`;
-        // --- 修改结束 ---
+        // 获取窗口和菜单的尺寸
+        const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
+        const { offsetWidth: menuWidth, offsetHeight: menuHeight } = contextMenu;
 
+        // 判断菜单是否会超出浏览器窗口的右边界
+        // window.scrollX 是水平滚动条的距离
+        if (mouseX + menuWidth > window.scrollX + windowWidth) {
+            // 如果超出，就把菜单的左边贴到鼠标的左边（即菜单显示在鼠标左侧）
+            contextMenu.style.left = `${mouseX - menuWidth}px`;
+        }
+
+        // 判断菜单是否会超出浏览器窗口的下边界
+        // window.scrollY 是垂直滚动条的距离
+        if (mouseY + menuHeight > window.scrollY + windowHeight) {
+            // 如果超出，就把菜单的底部贴到鼠标的底部（即菜单显示在鼠标上方）
+            contextMenu.style.top = `${mouseY - menuHeight}px`;
+        }
+
+        // 绑定数据到菜单上，供后续操作使用
         contextMenu.dataset.imagePath = imagePath;
         contextMenu.dataset.filename = filename;
     }
+    // --- 函数修改结束 ---
 
     // 隐藏右键菜单
     function hideContextMenu() {
@@ -156,30 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 防止菜单超出屏幕
-    function normalizePosition(mouseX, mouseY) {
-        const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
-        const { offsetWidth: menuWidth, offsetHeight: menuHeight } = contextMenu;
-
-        let normalizedX = mouseX;
-        let normalizedY = mouseY;
-
-        // 如果菜单的右边缘超出了窗口，就把它向左移动
-        if (mouseX + menuWidth > windowWidth) {
-            normalizedX = windowWidth - menuWidth - 5; // 减5像素作为边距
-        }
-        // 如果菜单的下边缘超出了窗口，就把它向上移动
-        if (mouseY + menuHeight > windowHeight) {
-            normalizedY = windowHeight - menuHeight - 5; // 减5像素作为边距
-        }
-        return { normalizedX, normalizedY };
-    }
-
-
     // --- 事件监听 ---
 
-    // --- 新增：全局禁用默认右键菜单 ---
-    document.addEventListener('contextmenu', e => e.preventDefault());
+    // 全局禁用默认右键菜单 (除了我们自己的)
+    document.addEventListener('contextmenu', e => {
+        // 检查右键点击的目标是否在我们的自定义菜单内部，如果是，则不阻止
+        if (!contextMenu.contains(e.target)) {
+            e.preventDefault();
+        }
+    });
+
 
     categoryList.addEventListener('click', (e) => {
         e.preventDefault();
@@ -196,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 全局点击事件，用于隐藏菜单
+    // 全局左键点击事件，用于隐藏菜单
     window.addEventListener('click', hideContextMenu);
 
 
