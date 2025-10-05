@@ -55,8 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.href = '#';
-            // 将数量显示在名字旁边
-            a.textContent = `${category.name} (${imageCount})`;
+            a.textContent = `${category.name} (${imageCount})`; // 显示数量
             a.dataset.categoryIndex = index;
 
             if (index === 0) a.classList.add('active');
@@ -76,40 +75,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
         category.images.forEach(filename => {
             const imagePath = `${category.path}/${filename}`;
+            
+            // 创建总卡片
             const item = document.createElement('div');
             item.className = 'gallery-item';
 
-            // --- 下载链接现在包裹图片和图标 ---
-            const downloadLink = document.createElement('a');
-            downloadLink.href = imagePath;
-            downloadLink.setAttribute('download', filename);
-            downloadLink.className = 'download-link';
-            
-            const downloadIcon = document.createElement('img');
-            downloadIcon.src = 'assets/download-icon.svg'; // 使用你的图标
-            downloadIcon.className = 'download-icon';
-            downloadIcon.alt = 'Download';
-            
-            downloadLink.appendChild(downloadIcon);
+            // --- 创建新的图片容器 ---
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'image-container';
 
-            // --- 图片本身 ---
+            // 创建图片
             const img = document.createElement('img');
             img.src = imagePath;
             img.alt = filename;
             img.loading = 'lazy';
 
-            // --- 文件名 ---
+            // --- 创建悬浮下载条 ---
+            const overlay = document.createElement('div');
+            overlay.className = 'image-overlay';
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = imagePath;
+            downloadLink.setAttribute('download', filename);
+            downloadLink.className = 'download-link';
+            downloadLink.title = `下载 ${filename}`; // 增加提示
+            
+            const downloadIcon = document.createElement('img');
+            downloadIcon.src = 'assets/download-icon.svg';
+            downloadIcon.className = 'download-icon';
+            downloadIcon.alt = 'Download';
+
+            downloadLink.appendChild(downloadIcon);
+            overlay.appendChild(downloadLink);
+
+            // --- 创建文件名 ---
             const filenameDiv = document.createElement('div');
             filenameDiv.className = 'filename';
             filenameDiv.textContent = filename;
             
-            item.appendChild(img);
-            item.appendChild(downloadLink); // 把下载链接添加到卡片里
+            // --- 组装 ---
+            imageContainer.appendChild(img);
+            imageContainer.appendChild(overlay);
+            item.appendChild(imageContainer);
             item.appendChild(filenameDiv);
             galleryContainer.appendChild(item);
         });
 
-        // 更新侧边栏激活状态
+        // 更新侧边栏状态
         document.querySelectorAll('.category-list a').forEach(a => {
             a.classList.remove('active');
             if (a.dataset.categoryIndex == categoryIndex) {
@@ -117,13 +129,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 在手机上选择分类后自动关闭侧边栏
+        // 移动端自动关闭侧边栏
         if (window.innerWidth <= 768) {
             document.body.classList.remove('sidebar-opened');
         }
     }
     
-    // --- 事件监听器部分 ---
+    // --- 事件监听 ---
     categoryList.addEventListener('click', (e) => {
         e.preventDefault();
         if (e.target.tagName === 'A') {
@@ -139,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 初始化 ---
+    // --- 初始化页面 ---
     function init() {
         if (window.innerWidth <= 768) {
             document.body.classList.add('sidebar-collapsed');
