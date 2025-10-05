@@ -55,7 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.href = '#';
-            a.textContent = `${category.name} (${imageCount})`; // 显示数量
+            // 将数量显示在名字旁边
+            a.textContent = `${category.name} (${imageCount})`;
             a.dataset.categoryIndex = index;
 
             if (index === 0) a.classList.add('active');
@@ -101,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             downloadLink.title = `下载 ${filename}`; // 增加提示
             
             const downloadIcon = document.createElement('img');
-            downloadIcon.src = 'assets/download-icon.svg';
+            downloadIcon.src = 'assets/download-icon.svg'; // 使用你上传的图标
             downloadIcon.className = 'download-icon';
             downloadIcon.alt = 'Download';
 
