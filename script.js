@@ -139,8 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const { clientX: mouseX, clientY: mouseY } = event;
         const { normalizedX, normalizedY } = normalizePosition(mouseX, mouseY);
 
-        contextMenu.style.left = `${normalizedX}px`;
-        contextMenu.style.top = `${normalizedY}px`;
+        // --- 这是修改后的代码 ---
+        // 在设置菜单的 top 和 left 属性时，加上页面的滚动偏移量
+        contextMenu.style.left = `${normalizedX + window.scrollX}px`;
+        contextMenu.style.top = `${normalizedY + window.scrollY}px`;
+        // --- 修改结束 ---
 
         contextMenu.dataset.imagePath = imagePath;
         contextMenu.dataset.filename = filename;
@@ -161,11 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let normalizedX = mouseX;
         let normalizedY = mouseY;
 
+        // 如果菜单的右边缘超出了窗口，就把它向左移动
         if (mouseX + menuWidth > windowWidth) {
-            normalizedX = windowWidth - menuWidth - 5;
+            normalizedX = windowWidth - menuWidth - 5; // 减5像素作为边距
         }
+        // 如果菜单的下边缘超出了窗口，就把它向上移动
         if (mouseY + menuHeight > windowHeight) {
-            normalizedY = windowHeight - menuHeight - 5;
+            normalizedY = windowHeight - menuHeight - 5; // 减5像素作为边距
         }
         return { normalizedX, normalizedY };
     }
