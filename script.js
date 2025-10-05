@@ -1,13 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 核心配置区域 ---
-    // 你所有的表情包都在这里配置。
-    // 未来添加新分类或新图片，只需要修改这个部分。
     const memeCategories = [
         {
-            name: '企鹅', // 分类显示名
-            path: 'assets/penguins', // 图片所在的文件夹路径
-            images: [ // 该分类下的所有图片文件名
+            name: '企鹅',
+            path: 'assets/penguins',
+            images: [
                 "18禁.jpg", "一枪崩死你老妈.webp", "两块五小时.jpg", "严禁嫖娼.jpg", "产品黄色发给我.jpg",
                 "仇人全给我乱刀砍死.jpg", "任命你们把片删了.webp", "你也嫖娼？.jpg", "兄弟快走是仙人跳.jpg",
                 "全速赶往嫖娼现场.jpg", "准备下海.jpg", "努力搬砖买片中.jpg", "匹配中.webp", "十月雅俗共赏.jpg",
@@ -40,17 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 "阅读百合漫画.jpg", "青春期对我的影响.jpg", "预备SM中.webp", "高雅人士视察.jpg", "鹿管.webp",
                 "黄片网站加载中.jpg"
             ]
-        },
-        // {
-        //     name: '猫猫',
-        //     path: 'assets/cats',
-        //     images: [ '猫猫疑惑.jpg', '猫猫震惊.png' ]
-        // },
-        // {
-        //     name: '狗狗',
-        //     path: 'assets/dogs',
-        //     images: [ '狗狗开心.gif' ]
-        // }
+        }
     ];
     // --- 配置区域结束 ---
 
@@ -59,9 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const galleryContainer = document.getElementById('gallery-container');
     const currentCategoryTitle = document.getElementById('current-category-title');
     const menuToggle = document.getElementById('menu-toggle');
-    const sidebar = document.getElementById('sidebar');
 
-    // 动态生成侧边栏分类
     function populateSidebar() {
         memeCategories.forEach((category, index) => {
             const li = document.createElement('li');
@@ -69,47 +55,56 @@ document.addEventListener('DOMContentLoaded', () => {
             a.href = '#';
             a.textContent = category.name;
             a.dataset.categoryIndex = index;
-            if (index === 0) {
-                a.classList.add('active'); // 默认选中第一个
-            }
+            if (index === 0) a.classList.add('active');
             li.appendChild(a);
             categoryList.appendChild(li);
         });
     }
 
-    // 根据分类显示表情包
     function showCategory(categoryIndex) {
         const category = memeCategories[categoryIndex];
         if (!category) return;
 
-        // 更新标题
         currentCategoryTitle.textContent = category.name;
-        
-        // 清空当前画廊
         galleryContainer.innerHTML = '';
 
-        // 加载新分类的图片
         category.images.forEach(filename => {
             const imagePath = `${category.path}/${filename}`;
-            
             const item = document.createElement('div');
             item.className = 'gallery-item';
 
             const img = document.createElement('img');
             img.src = imagePath;
             img.alt = filename;
-            img.loading = 'lazy'; // 图片懒加载
+            img.loading = 'lazy';
 
-            const filenameDiv = document.createElement('div');
-            filenameDiv.className = 'filename';
-            filenameDiv.textContent = filename;
+            // --- 新增：文件名和下载图标的容器 ---
+            const filenameContainer = document.createElement('div');
+            filenameContainer.className = 'filename-container';
+
+            const filenameText = document.createElement('span');
+            filenameText.className = 'filename-text';
+            filenameText.textContent = filename;
+
+            const downloadLink = document.createElement('a');
+            downloadLink.href = imagePath;
+            downloadLink.setAttribute('download', filename);
+            downloadLink.className = 'download-link';
+            
+            const downloadIcon = document.createElement('img');
+            downloadIcon.src = 'assets/download-icon.svg'; // 使用你上传的图标
+            downloadIcon.className = 'download-icon';
+            downloadIcon.alt = 'Download';
+
+            downloadLink.appendChild(downloadIcon);
+            filenameContainer.appendChild(filenameText);
+            filenameContainer.appendChild(downloadLink);
             
             item.appendChild(img);
-            item.appendChild(filenameDiv);
+            item.appendChild(filenameContainer);
             galleryContainer.appendChild(item);
         });
 
-        // 更新侧边栏激活状态
         document.querySelectorAll('.category-list a').forEach(a => {
             a.classList.remove('active');
             if (a.dataset.categoryIndex == categoryIndex) {
@@ -117,42 +112,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 在手机上选择分类后自动关闭侧边栏
         if (window.innerWidth <= 768) {
             document.body.classList.remove('sidebar-opened');
         }
     }
     
-    // 侧边栏点击事件
     categoryList.addEventListener('click', (e) => {
         e.preventDefault();
         if (e.target.tagName === 'A') {
-            const categoryIndex = e.target.dataset.categoryIndex;
-            showCategory(categoryIndex);
+            showCategory(e.target.dataset.categoryIndex);
         }
     });
 
-    // 汉堡菜单点击事件
     menuToggle.addEventListener('click', () => {
-        // 区分手机和桌面端
         if (window.innerWidth <= 768) {
-             document.body.classList.toggle('sidebar-opened');
+            document.body.classList.toggle('sidebar-opened');
         } else {
-             document.body.classList.toggle('sidebar-collapsed');
+            document.body.classList.toggle('sidebar-collapsed');
         }
     });
 
-    // 初始化页面
     function init() {
-        // 根据屏幕宽度决定侧边栏初始状态
-        if (window.innerWidth > 768) {
-            // 桌面端默认不折叠
-        } else {
-            // 移动端默认折叠
+        if (window.innerWidth <= 768) {
             document.body.classList.add('sidebar-collapsed');
         }
         populateSidebar();
-        showCategory(0); // 默认显示第一个分类
+        showCategory(0);
     }
 
     init();
