@@ -48,19 +48,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentCategoryTitle = document.getElementById('current-category-title');
     const menuToggle = document.getElementById('menu-toggle');
 
+    // 动态生成侧边栏分类，并自动计算数量
     function populateSidebar() {
         memeCategories.forEach((category, index) => {
+            const imageCount = category.images.length; // 自动计算图片数量
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.href = '#';
-            a.textContent = category.name;
+            // 将数量显示在名字旁边
+            a.textContent = `${category.name} (${imageCount})`;
             a.dataset.categoryIndex = index;
+
             if (index === 0) a.classList.add('active');
+            
             li.appendChild(a);
             categoryList.appendChild(li);
         });
     }
 
+    // 根据分类显示表情包
     function showCategory(categoryIndex) {
         const category = memeCategories[categoryIndex];
         if (!category) return;
@@ -73,38 +79,37 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'gallery-item';
 
-            const img = document.createElement('img');
-            img.src = imagePath;
-            img.alt = filename;
-            img.loading = 'lazy';
-
-            // --- 新增：文件名和下载图标的容器 ---
-            const filenameContainer = document.createElement('div');
-            filenameContainer.className = 'filename-container';
-
-            const filenameText = document.createElement('span');
-            filenameText.className = 'filename-text';
-            filenameText.textContent = filename;
-
+            // --- 下载链接现在包裹图片和图标 ---
             const downloadLink = document.createElement('a');
             downloadLink.href = imagePath;
             downloadLink.setAttribute('download', filename);
             downloadLink.className = 'download-link';
             
             const downloadIcon = document.createElement('img');
-            downloadIcon.src = 'assets/download-icon.svg'; // 使用你上传的图标
+            downloadIcon.src = 'assets/download-icon.svg'; // 使用你的图标
             downloadIcon.className = 'download-icon';
             downloadIcon.alt = 'Download';
-
+            
             downloadLink.appendChild(downloadIcon);
-            filenameContainer.appendChild(filenameText);
-            filenameContainer.appendChild(downloadLink);
+
+            // --- 图片本身 ---
+            const img = document.createElement('img');
+            img.src = imagePath;
+            img.alt = filename;
+            img.loading = 'lazy';
+
+            // --- 文件名 ---
+            const filenameDiv = document.createElement('div');
+            filenameDiv.className = 'filename';
+            filenameDiv.textContent = filename;
             
             item.appendChild(img);
-            item.appendChild(filenameContainer);
+            item.appendChild(downloadLink); // 把下载链接添加到卡片里
+            item.appendChild(filenameDiv);
             galleryContainer.appendChild(item);
         });
 
+        // 更新侧边栏激活状态
         document.querySelectorAll('.category-list a').forEach(a => {
             a.classList.remove('active');
             if (a.dataset.categoryIndex == categoryIndex) {
@@ -112,11 +117,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // 在手机上选择分类后自动关闭侧边栏
         if (window.innerWidth <= 768) {
             document.body.classList.remove('sidebar-opened');
         }
     }
     
+    // --- 事件监听器部分 ---
     categoryList.addEventListener('click', (e) => {
         e.preventDefault();
         if (e.target.tagName === 'A') {
@@ -132,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- 初始化 ---
     function init() {
         if (window.innerWidth <= 768) {
             document.body.classList.add('sidebar-collapsed');
